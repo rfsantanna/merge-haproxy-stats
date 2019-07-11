@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 
-main_sock = '/var/run/haproxy/info.sock'
-proc_socks = [
-    '/var/run/haproxy/hastat-proc1.sock',
-    '/var/run/haproxy/hastat-proc2.sock',
-    '/var/run/haproxy/hastat-proc3.sock',
-    '/var/run/haproxy/hastat-proc4.sock',
-    '/var/run/haproxy/hastat-proc5.sock',
-]
+import os
+import glob
+
+sockets_dir = '/var/run/haproxy'
+merged_socket = f'{sockets_dir}/info.sock'
+proc_sockets = glob.glob(f'{sockets_dir}/hastat-proc*.sock')
 
 numbered_stats = {
     1: '# pxname',
@@ -73,4 +71,3 @@ numbered_stats = {
     61: 'rtime',
     62: 'ttime'
 }
-
