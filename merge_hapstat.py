@@ -1,7 +1,21 @@
 #!/usr/bin/env python
 
 import os
+import csv
 import glob
+import socket
+from io import StringIO
+
+
+def show_stat(sock):
+    if os.path.exists(sock):
+        client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        client.connect(sock)
+        client.send(b'show stat\n')
+        response = StringIO(client.recv(8192).decode('utf-8'))
+        client.close()
+        return csv.DictReader(response)
+
 
 sockets_dir = '/var/run/haproxy'
 merged_socket = f'{sockets_dir}/info.sock'
