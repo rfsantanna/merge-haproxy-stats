@@ -37,9 +37,7 @@ class HPSockets(Config):
     
     def __init__(self):
         self.result = {}
-        self.procs_data = {
-            os.path.basename(sock):[] for sock in self.proc_sock_list
-        }
+        self.procs_data = {}
         self.server = self._create_unix_socket()
         
     def _create_unix_socket(self):
@@ -51,8 +49,18 @@ class HPSockets(Config):
         server.listen(5)
         os.chmod(self.merged_sock, 0o666)
         return server
+    
+    def update_proc_stats(self):
+        procs_data = {
+            os.path.basename(sock):{} for sock in self.proc_sock_list
+        }
+        for socket_path in self.proc_sock_list:
+            socket = os.path.basename(socket_path)
+            updated_dict = self.run_show_stats(socket_path)
+            procs_data[socket] = updated_dict
+        return procs_data
 
-    def show_stat(self, sock):
+    def run_show_stats(self, sock):
         if os.path.exists(sock):
             client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             client.connect(sock)
@@ -75,6 +83,5 @@ class HPSockets(Config):
 if __name__ == '__main__':
     # conf = Config()
     # procs_data = {os.path.basename(sock):{} for sock in conf.proc_sock_list}
-    manage = HPSockets()
-    
-
+    hpsock = HPSockets()
+    hpsock.procs_data = hpsock.update_proc_stats()
