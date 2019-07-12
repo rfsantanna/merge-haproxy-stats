@@ -38,6 +38,7 @@ class HPSockets(Config):
     def __init__(self):
         self.result = {}
         self.procs_data = {}
+        self.count = {i:0 for i in Config.enum_stats.keys()}
         self.server = self._create_unix_socket()
         
     def _create_unix_socket(self):
@@ -68,6 +69,30 @@ class HPSockets(Config):
             response = StringIO(client.recv(8192).decode('utf-8'))
             client.close()
             return csv.DictReader(response)
+
+    def include_missing_stat(self, srv_num, stat_num):
+        if self.result.get(srv_num):
+            if self.result[srv_num].get(stat_num):
+                return False
+            else:
+                self.result[srv_num][stat_num] = ''
+        else:
+            self.result[srv_num] = ''
+            self.result[srv_num][stat_num] = ''
+        return True
+
+    def merge_stat(self, srv_num, stat_num, value):
+        is_updated = include_missing_stat(srv_num, stat_num)
+        if is_updated:
+            if stat_num in self.fix_list:
+                self.result[srv_num][stat_num] = value
+
+        if stat_num in self.sum_list + self.avg_list:
+            if self.result[srv_num][stat_num] == '':
+                self.result[srv_num][stat_num] = 0
+            tmp = int(self.result[srv_num][stat_num])
+            self.result[srv_num][stat_num] = tmp
+            self.result[srv_num][stat_num] += int(value)
 
     def generate_csv(self, result_dict):
         csv_response = []
