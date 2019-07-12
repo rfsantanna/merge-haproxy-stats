@@ -10,27 +10,27 @@ from io import StringIO
 
 class Config():
 
-    def __init__(self, conf_file='merge_config.json'):
-        conf_dir = os.path.dirname(os.path.realpath(__file__))
-        conf = json.load(open(f'{conf_dir}/{conf_file}', 'r'))
+    conf_file = 'merge_config.json'
+    conf_dir = os.path.dirname(os.path.realpath(__file__))
+    conf = json.load(open(f'{conf_dir}/{conf_file}', 'r'))
 
-        self.sockets_dir = conf.get('socket_dir', '/var/run/haproxy')
-        self.merged_sock = (
-            f'{self.sockets_dir}/{conf.get("merged_socket", "info.sock")}'
-        )
-        self.proc_sock_list = glob.glob(
-            f'{self.sockets_dir}/'
-            f'{conf.get("proc_socket_mask", "hastat-proc*.sock")}'
-        )
-        self.header = conf.get('header')
-        self.enum_stats = dict(enumerate(self.header, 1))
-        self.avg_list = [24, 25, 39, 58, 59, 60, 62,]
-        self.fix_list = [1, 2, 7, 18, 19, 20, 21, 26, 28,
-                        29, 30, 32, 33, 35, 37, 38, 56,]
-        self.sum_list = [3, 4, 5, 6, 8, 9, 10, 11, 12, 13,
-                        14, 15, 16, 17, 22, 23, 31, 34, 35,
-                        36, 40, 41, 42, 43, 44, 45, 46, 47,
-                        48, 49, 50, 51, 52, 53, 54, 55, 61,]
+    sockets_dir = conf.get('socket_dir', '/var/run/haproxy')
+    merged_sock = (
+        f'{sockets_dir}/{conf.get("merged_socket", "info.sock")}'
+    )
+    proc_sock_list = glob.glob(
+        f'{sockets_dir}/'
+        f'{conf.get("proc_socket_mask", "hastat-proc*.sock")}'
+    )
+    header = conf.get('header')
+    enum_stats = dict(enumerate(header, 1))
+    avg_list = [24, 25, 39, 58, 59, 60, 62,]
+    fix_list = [1, 2, 7, 18, 19, 20, 21, 26, 28,
+                29, 30, 32, 33, 35, 37, 38, 56,]
+    sum_list = [3, 4, 5, 6, 8, 9, 10, 11, 12, 13,
+                14, 15, 16, 17, 22, 23, 31, 34, 35,
+                36, 40, 41, 42, 43, 44, 45, 46, 47,
+                48, 49, 50, 51, 52, 53, 54, 55, 61,]
 
 
 class HPSockets(Config):
@@ -41,20 +41,20 @@ class HPSockets(Config):
         self.server = self._create_unix_socket()
         
     def _create_unix_socket(self):
-        if os.path.exists(self.merged_sock):
-            os.remove(self.merged_sock)
+        if os.path.exists(Config.merged_sock):
+            os.remove(Config.merged_sock)
         
         server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        server.bind(self.merged_sock)
+        server.bind(Config.merged_sock)
         server.listen(5)
-        os.chmod(self.merged_sock, 0o666)
+        os.chmod(Config.merged_sock, 0o666)
         return server
     
     def update_proc_stats(self):
         procs_data = {
-            os.path.basename(sock):{} for sock in self.proc_sock_list
+            os.path.basename(sock):{} for sock in Config.proc_sock_list
         }
-        for socket_path in self.proc_sock_list:
+        for socket_path in Config.proc_sock_list:
             socket = os.path.basename(socket_path)
             updated_dict = self.run_show_stats(socket_path)
             procs_data[socket] = updated_dict
@@ -71,10 +71,10 @@ class HPSockets(Config):
 
     def generate_csv(self, result_dict):
         csv_response = []
-        csv_response.append(','.join(self.header))
+        csv_response.append(','.join(Config.header))
         for server in result_dict:
             tmp_list = []
-            for stat in self.header:
+            for stat in self.Config:
                 tmp_list.append(str(result_dict[server][stat]))
             csv_response.append(','.join(tmp_list))
         return '\n'.join(csv_response)
