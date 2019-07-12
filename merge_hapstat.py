@@ -36,13 +36,21 @@ class Config():
 class HPSockets(Config):
     
     def __init__(self):
-        if os.path.exists(self.merged_sock):
-            os.remove(self.merged_sock)
-
         self.result = {}
         self.procs_data = {
             os.path.basename(sock):[] for sock in self.proc_sock_list
         }
+        self.server = self._create_unix_socket()
+        
+    def _create_unix_socket(self):
+        if os.path.exists(self.merged_sock):
+            os.remove(self.merged_sock)
+        
+        server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        server.bind(self.merged_sock)
+        server.listen(5)
+        os.chmod(self.merged_sock, 0o666)
+        return server
 
     def show_stat(self, sock):
         if os.path.exists(sock):
