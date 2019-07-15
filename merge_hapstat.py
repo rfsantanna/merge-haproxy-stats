@@ -38,7 +38,7 @@ class HPSockets(Config):
     def __init__(self):
         self.result = {}
         self.procs_data = {}
-        self.count = {i:0 for i in Config.enum_stats.keys()}
+        self.avg_count = {}
         self.server = self._create_unix_socket()
         
     def _create_unix_socket(self):
@@ -86,6 +86,11 @@ class HPSockets(Config):
         if is_updated:
             if stat_num in self.fix_list:
                 self.result[srv_num][stat_num] = value
+            elif stat_num in self.avg_list:
+                if self.avg_count[srv_num].get(stat_num):
+                    self.avg_count[srv_num][stat_num] += 1
+                else:
+                    self.avg_count[srv_num][stat_num] = 1
 
         if stat_num in self.sum_list + self.avg_list:
             if self.result[srv_num][stat_num] == '':
@@ -93,6 +98,12 @@ class HPSockets(Config):
             tmp = int(self.result[srv_num][stat_num])
             self.result[srv_num][stat_num] = tmp
             self.result[srv_num][stat_num] += int(value)
+            if stat_num in self.avg_list:
+                self.avg_count[srv_num][stat_num] += 1          
+
+    def update_average(self):
+        pass
+            
 
     def generate_csv(self, result_dict):
         csv_response = []
