@@ -113,16 +113,15 @@ class HPSockets(Config):
                 average = self.result[srv_num][stat_num] / count
                 self.result[srv_num][stat_num] = average
 
-    def generate_csv(self, result_dict):
+    def generate_csv(self):
         csv_response = []
         csv_response.append(','.join(Config.header))
-        for server in result_dict:
-            tmp_list = []
-            for stat in self.Config:
-                tmp_list.append(str(result_dict[server][stat]))
-            csv_response.append(','.join(tmp_list))
+        for server_stats in self.result:
+            server_values = []
+            for value in server_stats:
+                server_values.append(str(value))
+            csv_response.append(','.join(server_values))
         return '\n'.join(csv_response)
-
 
 if __name__ == '__main__':
     # conf = Config()
