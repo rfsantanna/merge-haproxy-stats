@@ -41,7 +41,7 @@ class HPSockets(Config):
         self.avg_count = {}
         self.server = self._create_unix_socket()
         
-    def _create_unix_socket(self):
+    def _create_unix_socket():
         if os.path.exists(Config.merged_sock):
             os.remove(Config.merged_sock)
         
@@ -51,6 +51,12 @@ class HPSockets(Config):
         os.chmod(Config.merged_sock, 0o666)
         return server
     
+    def wait_unix_socket_request(self):
+        connection, client_address = server.accept()
+        data  = connection.recv(1024)
+        if data.startswith('show stat'):
+            connection.sendall(self.generate_csv() + '\n\n')
+
     def update_proc_stats(self):
         procs_data = {
             os.path.basename(sock):{} for sock in Config.proc_sock_list
@@ -102,8 +108,10 @@ class HPSockets(Config):
                 self.avg_count[srv_num][stat_num] += 1          
 
     def update_average(self):
-        pass
-            
+        for srv_num in self.result:
+            for stat_num, count in self.avg_count.items():
+                average = self.result[srv_num][stat_num] / count
+                self.result[srv_num][stat_num] = average
 
     def generate_csv(self, result_dict):
         csv_response = []
