@@ -85,15 +85,14 @@ class HPSockets(Config):
                 self.avg_count[srv_num][stat_num] += 1          
 
     def _update_average(self):
-        for srv_num in self.result:
-            for stat_num, count in self.avg_count.items():
-                average = self.result[srv_num][stat_num] / count
+        for srv_num, avg_stats in self.avg_count.items():
+            for stat_num, count in avg_stats.items():
+                average = self.result[srv_num][stat_num] // count
                 self.result[srv_num][stat_num] = average
 
     def create_unix_socket(self):
         if os.path.exists(Config.merged_sock):
             os.remove(Config.merged_sock)
-        
         server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         server.bind(Config.merged_sock)
         server.listen(5)
@@ -141,3 +140,4 @@ if __name__ == '__main__':
     hpsock.server = hpsock.create_unix_socket()
     while True:
         hpsock.wait_unix_socket_request()
+        hpsock.__init__()
