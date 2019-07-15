@@ -39,7 +39,6 @@ class HPSockets(Config):
         self.result = {}
         self.procs_data = {}
         self.avg_count = {}
-        self.server = self._create_unix_socket()
 
     def _update_proc_stats(self):
         procs_data = {
@@ -58,7 +57,8 @@ class HPSockets(Config):
             else:
                 self.result[srv_num][stat_num] = ''
         else:
-            self.result[srv_num] = ''
+            self.avg_count[srv_num] = {}
+            self.result[srv_num] = {}
             self.result[srv_num][stat_num] = ''
         return True
 
@@ -76,6 +76,8 @@ class HPSockets(Config):
         if stat_num in self.sum_list + self.avg_list:
             if self.result[srv_num][stat_num] == '':
                 self.result[srv_num][stat_num] = 0
+            if not value:
+                value = 0
             tmp = int(self.result[srv_num][stat_num])
             self.result[srv_num][stat_num] = tmp
             self.result[srv_num][stat_num] += int(value)
@@ -88,7 +90,7 @@ class HPSockets(Config):
                 average = self.result[srv_num][stat_num] / count
                 self.result[srv_num][stat_num] = average
 
-    def create_unix_socket():
+    def create_unix_socket(self):
         if os.path.exists(Config.merged_sock):
             os.remove(Config.merged_sock)
         
@@ -99,11 +101,12 @@ class HPSockets(Config):
         return server
     
     def wait_unix_socket_request(self):
-        connection, client_address = server.accept()
+        connection, client_address = self.server.accept()
         data  = connection.recv(1024)
-        if data.startswith('show stat'):
+        if data.startswith(b'show stat'):
             self.get_stats()
-            connection.sendall(self.generate_csv() + '\n\n')
+            csv = bytes(self.generate_csv() + '\n\n', 'utf-8')
+            connection.sendall(csv)
 
     def run_show_stats(self, sock):
         if os.path.exists(sock):
@@ -117,22 +120,24 @@ class HPSockets(Config):
     def generate_csv(self):
         csv_response = []
         csv_response.append(','.join(Config.header))
-        for server_stats in self.result:
+        for server_num in self.result:
             server_values = []
-            for value in server_stats:
-                server_values.append(str(value))
+            for stat in self.result[server_num]:
+                server_values.append(str(self.result[server_num][stat]))
             csv_response.append(','.join(server_values))
         return '\n'.join(csv_response)
 
     def get_stats(self):
         self._update_proc_stats()
-        for proc_data in self.procs_data:
-            for srv_num, srv_data in enumerate(proc_data):
+        for proc in self.procs_data:
+            for srv_num, srv_data in enumerate(self.procs_data[proc]):
                 for stat_num, value in enumerate(srv_data, 1):
-                    self._merge_stat(srv_num, stat_num, value)
+                    self._merge_stat(srv_num, stat_num, srv_data[value])
         self._update_average()
 
 
 if __name__ == '__main__':
     hpsock = HPSockets()
-    
+    hpsock.server = hpsock.create_unix_socket()
+    while True:
+        hpsock.wait_unix_socket_request()
