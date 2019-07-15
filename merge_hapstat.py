@@ -102,6 +102,7 @@ class HPSockets(Config):
         connection, client_address = server.accept()
         data  = connection.recv(1024)
         if data.startswith('show stat'):
+            self.get_stats()
             connection.sendall(self.generate_csv() + '\n\n')
 
     def run_show_stats(self, sock):
@@ -122,6 +123,15 @@ class HPSockets(Config):
                 server_values.append(str(value))
             csv_response.append(','.join(server_values))
         return '\n'.join(csv_response)
+
+    def get_stats(self):
+        self._update_proc_stats()
+        for proc_data in self.procs_data:
+            for srv_num, srv_data in enumerate(proc_data):
+                for stat_num, value in enumerate(srv_data, 1):
+                    self._merge_stat(srv_num, stat_num, value)
+        self._update_average()
+
 
 if __name__ == '__main__':
     hpsock = HPSockets()
