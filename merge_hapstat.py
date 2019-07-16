@@ -33,7 +33,7 @@ class Config():
                 48, 49, 50, 51, 52, 53, 54, 55, 61,]
 
 
-class HPSockets(Config):
+class HPSockets():
     
     def __init__(self):
         self.result = {}
@@ -65,15 +65,15 @@ class HPSockets(Config):
     def _merge_stat(self, srv_num, stat_num, value):
         is_updated = self._include_missing_stat(srv_num, stat_num)
         if is_updated:
-            if stat_num in self.fix_list:
+            if stat_num in Config.fix_list:
                 self.result[srv_num][stat_num] = value
-            elif stat_num in self.avg_list:
+            elif stat_num in Config.avg_list:
                 if self.avg_count[srv_num].get(stat_num):
                     self.avg_count[srv_num][stat_num] += 1
                 else:
                     self.avg_count[srv_num][stat_num] = 1
 
-        if stat_num in self.sum_list + self.avg_list:
+        if stat_num in Config.sum_list + Config.avg_list:
             if self.result[srv_num][stat_num] == '':
                 self.result[srv_num][stat_num] = 0
             if not value:
@@ -81,7 +81,7 @@ class HPSockets(Config):
             tmp = int(self.result[srv_num][stat_num])
             self.result[srv_num][stat_num] = tmp
             self.result[srv_num][stat_num] += int(value)
-            if stat_num in self.avg_list:
+            if stat_num in Config.avg_list:
                 self.avg_count[srv_num][stat_num] += 1          
 
     def _update_average(self):
