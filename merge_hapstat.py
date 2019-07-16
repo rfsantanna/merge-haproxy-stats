@@ -23,14 +23,10 @@ class Config():
         f'{conf.get("proc_socket_mask", "hastat-proc*.sock")}'
     )
     header = conf.get('header')
+    avg_list = conf.get('avg_list')
+    fix_list = conf.get('fix_list')
+    sum_list = conf.get('sum_list')
     enum_stats = dict(enumerate(header, 1))
-    avg_list = [24, 25, 39, 58, 59, 60, 62,]
-    fix_list = [1, 2, 7, 18, 19, 20, 21, 26, 28,
-                29, 30, 32, 33, 35, 37, 38, 56,]
-    sum_list = [3, 4, 5, 6, 8, 9, 10, 11, 12, 13,
-                14, 15, 16, 17, 22, 23, 31, 34, 35,
-                36, 40, 41, 42, 43, 44, 45, 46, 47,
-                48, 49, 50, 51, 52, 53, 54, 55, 61,]
 
 
 class HPSockets():
