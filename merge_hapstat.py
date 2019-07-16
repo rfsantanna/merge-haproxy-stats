@@ -9,7 +9,15 @@ from io import StringIO
 
 
 class Config():
-
+    """
+    Get config from json file
+    Set the unix sockets directory and names
+    Parameters:
+    - header: CSV file header with all stats in default order
+    - avg_list: Stats that will be divided to get medium
+    - fix_list: Fixed/imutable stats
+    - sum_list: Stats that will be summed
+    """
     conf_file = 'merge_config.json'
     conf_dir = os.path.dirname(os.path.realpath(__file__))
     conf = json.load(open(f'{conf_dir}/{conf_file}', 'r'))
@@ -37,6 +45,10 @@ class HPSockets():
         self.avg_count = {}
 
     def _update_proc_stats(self):
+        """
+        Get stats(by processor) from all HAProxy unix sockets
+        and save it on procs_data variable.
+        """
         procs_data = {
             os.path.basename(sock):{} for sock in Config.proc_sock_list
         }
@@ -47,6 +59,9 @@ class HPSockets():
         self.procs_data = procs_data
 
     def _include_missing_stat(self, srv_num, stat_num):
+        """
+        Include new server or new stat in the result dictionary.
+        """
         if self.result.get(srv_num):
             if self.result[srv_num].get(stat_num):
                 return False
@@ -59,6 +74,13 @@ class HPSockets():
         return True
 
     def _merge_stat(self, srv_num, stat_num, value):
+        """
+        Merge single stat.
+        The stats in fix_list will be updated just one time.
+        The stats in avg_list will be counted in avg_count dict
+        to be divided when finish.
+        The stats in sum_list will be summed directly in result.
+        """
         is_updated = self._include_missing_stat(srv_num, stat_num)
         if is_updated:
             if stat_num in Config.fix_list:
@@ -81,12 +103,19 @@ class HPSockets():
                 self.avg_count[srv_num][stat_num] += 1          
 
     def _update_average(self):
+        """
+        Get medium of stats based on avg_count dictionary.
+        """
         for srv_num, avg_stats in self.avg_count.items():
             for stat_num, count in avg_stats.items():
                 average = self.result[srv_num][stat_num] // count
                 self.result[srv_num][stat_num] = average
 
     def create_unix_socket(self):
+        """
+        Create the unix socket Object
+        Give read/write permission
+        """
         if os.path.exists(Config.merged_sock):
             os.remove(Config.merged_sock)
         server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -96,6 +125,10 @@ class HPSockets():
         return server
     
     def wait_unix_socket_request(self):
+        """
+        Wait for 'show stat' request in socket.
+        Sends CSV file as response on socket.
+        """
         connection, client_address = self.server.accept()
         data  = connection.recv(1024)
         if data.startswith(b'show stat'):
@@ -104,6 +137,9 @@ class HPSockets():
             connection.sendall(csv)
 
     def run_show_stats(self, sock):
+        """
+        Run 'show stats' command on sock (path to unix socket)
+        """
         if os.path.exists(sock):
             client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             client.connect(sock)
@@ -113,6 +149,9 @@ class HPSockets():
             return csv.DictReader(response)
 
     def generate_csv(self):
+        """
+        Get the result dict with all merged stats and generate CSV
+        """
         csv_response = []
         csv_response.append(','.join(Config.header))
         for server_num in self.result:
@@ -123,6 +162,10 @@ class HPSockets():
         return '\n'.join(csv_response)
 
     def get_stats(self):
+        """
+        Function to get stats of all sockets
+        and merge in result dictionary
+        """
         self._update_proc_stats()
         for proc in self.procs_data:
             for srv_num, srv_data in enumerate(self.procs_data[proc]):
@@ -136,4 +179,4 @@ if __name__ == '__main__':
     hpsock.server = hpsock.create_unix_socket()
     while True:
         hpsock.wait_unix_socket_request()
-        hpsock.__init__()
+        hpsock.__init__() # Reset variables
